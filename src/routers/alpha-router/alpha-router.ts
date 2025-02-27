@@ -11,7 +11,7 @@ import {
 } from '@uniswap/sdk-core';
 import { TokenList } from '@uniswap/token-lists';
 import { Pool, Position, SqrtPriceMath, TickMath } from '@uniswap/v3-sdk';
-import retry from 'async-retry';
+// import retry from 'async-retry';
 import JSBI from 'jsbi';
 import _ from 'lodash';
 import NodeCache from 'node-cache';
@@ -526,9 +526,8 @@ export type AlphaRouterConfig = {
 
 export class AlphaRouter
   implements
-    IRouter<AlphaRouterConfig>,
-    ISwapToRatio<AlphaRouterConfig, SwapAndAddConfig>
-{
+  IRouter<AlphaRouterConfig>,
+  ISwapToRatio<AlphaRouterConfig, SwapAndAddConfig> {
   protected chainId: ChainId;
   protected provider: BaseProvider;
   protected multicall2Provider: UniswapMulticallProvider;
@@ -1357,8 +1356,9 @@ export class AlphaRouter
 
     // Get a block number to specify in all our calls. Ensures data we fetch from chain is
     // from the same block.
-    const blockNumber =
-      partialRoutingConfig.blockNumber ?? this.getBlockNumberPromise();
+    console.log("partialRoutingConfig.blockNumber", partialRoutingConfig.blockNumber);
+    const blockNumber = process.env.BLOCK_NUMBER ? Number(process.env.BLOCK_NUMBER) : 26900127; // partialRoutingConfig.blockNumber ?? this.getBlockNumberPromise();
+    console.log("Starting on block: ", blockNumber);
 
     const routingConfig: AlphaRouterConfig = _.merge(
       {
@@ -1384,8 +1384,8 @@ export class AlphaRouter
     // const gasTokenAccessor = await this.tokenProvider.getTokens([routingConfig.gasToken!]);
     const gasToken = routingConfig.gasToken
       ? (
-          await this.tokenProvider.getTokens([routingConfig.gasToken])
-        ).getTokenByAddress(routingConfig.gasToken)
+        await this.tokenProvider.getTokens([routingConfig.gasToken])
+      ).getTokenByAddress(routingConfig.gasToken)
       : undefined;
 
     const providerConfig: GasModelProviderConfig = {
@@ -2749,31 +2749,31 @@ export class AlphaRouter
     const nativeCurrency = WRAPPED_NATIVE_CURRENCY[this.chainId];
     const nativeAndQuoteTokenV3PoolPromise = !quoteToken.equals(nativeCurrency)
       ? getHighestLiquidityV3NativePool(
-          quoteToken,
-          this.v3PoolProvider,
-          providerConfig
-        )
+        quoteToken,
+        this.v3PoolProvider,
+        providerConfig
+      )
       : Promise.resolve(null);
     const nativeAndAmountTokenV3PoolPromise = !amountToken.equals(
       nativeCurrency
     )
       ? getHighestLiquidityV3NativePool(
-          amountToken,
-          this.v3PoolProvider,
-          providerConfig
-        )
+        amountToken,
+        this.v3PoolProvider,
+        providerConfig
+      )
       : Promise.resolve(null);
 
     // If a specific gas token is specified in the provider config
     // fetch the highest liq V3 pool with it and the native currency
     const nativeAndSpecifiedGasTokenV3PoolPromise =
       providerConfig?.gasToken &&
-      !providerConfig?.gasToken.equals(nativeCurrency)
+        !providerConfig?.gasToken.equals(nativeCurrency)
         ? getHighestLiquidityV3NativePool(
-            providerConfig?.gasToken,
-            this.v3PoolProvider,
-            providerConfig
-          )
+          providerConfig?.gasToken,
+          this.v3PoolProvider,
+          providerConfig
+        )
         : Promise.resolve(null);
 
     const [
@@ -2797,15 +2797,15 @@ export class AlphaRouter
 
     const v2GasModelPromise = this.v2Supported?.includes(this.chainId)
       ? this.v2GasModelFactory
-          .buildGasModel({
-            chainId: this.chainId,
-            gasPriceWei,
-            poolProvider: this.v2PoolProvider,
-            token: quoteToken,
-            l2GasDataProvider: this.l2GasDataProvider,
-            providerConfig: providerConfig,
-          })
-          .catch((_) => undefined) // If v2 model throws uncaught exception, we return undefined v2 gas model, so there's a chance v3 route can go through
+        .buildGasModel({
+          chainId: this.chainId,
+          gasPriceWei,
+          poolProvider: this.v2PoolProvider,
+          token: quoteToken,
+          l2GasDataProvider: this.l2GasDataProvider,
+          providerConfig: providerConfig,
+        })
+        .catch((_) => undefined) // If v2 model throws uncaught exception, we return undefined v2 gas model, so there's a chance v3 route can go through
       : Promise.resolve(undefined);
 
     const v3GasModelPromise = this.v3GasModelFactory.buildGasModel({
@@ -3180,19 +3180,19 @@ export class AlphaRouter
     return new Fraction(numeratorAbs, denominatorAbs);
   }
 
-  private getBlockNumberPromise(): number | Promise<number> {
-    return retry(
-      async (_b, attempt) => {
-        if (attempt > 1) {
-          log.info(`Get block number attempt ${attempt}`);
-        }
-        return this.provider.getBlockNumber();
-      },
-      {
-        retries: 2,
-        minTimeout: 100,
-        maxTimeout: 1000,
-      }
-    );
-  }
+  // private getBlockNumberPromise(): number | Promise<number> {
+  //   return retry(
+  //     async (_b, attempt) => {
+  //       if (attempt > 1) {
+  //         log.info(`Get block number attempt ${attempt}`);
+  //       }
+  //       return this.provider.getBlockNumber();
+  //     },
+  //     {
+  //       retries: 2,
+  //       minTimeout: 100,
+  //       maxTimeout: 1000,
+  //     }
+  //   );
+  // }
 }
